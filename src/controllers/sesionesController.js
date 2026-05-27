@@ -1,4 +1,6 @@
  // src/controllers/sesionesController.js 
+ // AGREGAR al inicio del archivo (después de la primera línea):
+const { pub } = require('../redis/client');
   // Contiene la lógica de negocio para las sesiones de estudio 
   // Por ahora usa un arreglo en memoria — el Paso 11 lo migra a Supabase 
    
@@ -34,34 +36,35 @@
   // ── POST /api/sesiones 
 
   // Crea una nueva sesión con los datos del body 
-  const crear = async (req, res) => { 
-    const { titulo, descripcion, fechaHora, materia } = req.body; 
-   
-    // Validación: título es obligatorio 
-    if (!titulo || titulo.trim() === '') { 
-      // 400 = Bad Request: el cliente envió datos incorrectos 
-      return res.status(400).json({ 
-        error: 'El campo titulo es obligatorio', 
-         campos_requeridos: ['titulo'], 
-        campos_opcionales: ['descripcion', 'fechaHora', 'materia'] 
-      }); 
-    } 
-   
-    const nuevaSesion = { 
-      id: nextId++, 
-      titulo: titulo.trim(), 
-      descripcion: descripcion || '', 
-      materia: materia || 'General', 
-      fechaHora: fechaHora || new Date().toISOString(), 
-      completada: false, 
-      creadaEn: new Date().toISOString() 
-    }; 
-   
-    sesiones.push(nuevaSesion); 
-   
-    // 201 = Created: se creó un nuevo recurso exitosamente 
-    res.status(201).json(nuevaSesion); 
-  }; 
+  const crear = async (req, res) => {
+    const { titulo, descripcion, fechaHora, materia } = req.body;
+
+    if (!titulo || titulo.trim() === '') {
+        return res.status(400).json({ error: 'El campo titulo es obligatorio' });
+    }
+
+    const nuevaSesion = {
+        id: nextId++,
+        titulo: titulo.trim(),
+        descripcion: descripcion || '',
+        materia: materia || 'General',
+        fechaHora: fechaHora || new Date().toISOString(),
+        completada: false,
+        creadaEn: new Date().toISOString()
+    };
+
+    sesiones.push(nuevaSesion);
+
+    // ✨ NUEVO: publicar evento en Redis DESPUÉS de guardar la sesión
+    await pub.publish('study:sesion:creada', JSON.stringify({
+        tipo: 'sesion:creada',
+        payload: nuevaSesion,
+        timestamp: new Date().toISOString()
+    }));
+    console.log('[Redis] Evento publicado: sesion:creada ->', nuevaSesion.titulo);
+
+    res.status(201).json(nuevaSesion);
+};
    
   // ── PUT /api/sesiones/:id 
 
