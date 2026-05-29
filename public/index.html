@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>StudySync – Notificaciones en Tiempo Real</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    h1 { color: #1A56DB; }
+    #status {
+      padding: 8px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+    .conectado { background: #D1FAE5; color: #065F46; }
+    .desconectado { background: #FEE2E2; color: #7F1D1D; }
+    #eventos { list-style: none; padding: 0; }
+    #eventos li {
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 8px;
+      background: #EFF6FF;
+      border-left: 4px solid #1A56DB;
+      animation: aparecer 0.3s ease;
+    }
+    @keyframes aparecer {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .hora { font-size: 11px; color: #64748B; }
+  </style>
+</head>
+<body>
+
+  <h1>📡 StudySync – Eventos en Tiempo Real</h1>
+  <div id="status" class="desconectado">🔴 Conectando...</div>
+
+  <ul id="eventos">
+    <li style="color:#64748B;">Esperando eventos... (crea una sesión con Thunder Client)</li>
+  </ul>
+
+  <script>
+    // Conectar al servidor Socket.io automáticamente
+    const socket = io();
+
+    socket.on('connect', () => {
+      document.getElementById('status').textContent = '🟢 Conectado al servidor en tiempo real';
+      document.getElementById('status').className = 'conectado';
+    });
+
+    socket.on('disconnect', () => {
+      document.getElementById('status').textContent = '🔴 Desconectado';
+      document.getElementById('status').className = 'desconectado';
+    });
+
+    // Escuchar el evento 'nuevo-evento' que emite el suscriptor Redis
+    socket.on('nuevo-evento', (evento) => {
+      const lista = document.getElementById('eventos');
+      const item = document.createElement('li');
+      const hora = new Date(evento.timestamp).toLocaleTimeString();
+
+      item.innerHTML = `
+        <strong>${evento.canal}</strong>: ${evento.payload?.titulo || JSON.stringify(evento.payload)}
+        <br><span class="hora">🕒 ${hora} · Socket ID: ${socket.id}</span>
+      `;
+
+      // Mostrar el más reciente primero
+      lista.insertBefore(item, lista.firstChild);
+    });
+  </script>
+</body>
+</html>
