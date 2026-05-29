@@ -17,16 +17,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// ——— RUTAS —————————————————————————————————————————————————————
+// ✨ NUEVO (Paso 8.5): Servir archivos estáticos de la carpeta public
+// Esto hace que al entrar a la raíz se muestre automáticamente el index.html
+app.use(express.static('public'));
 
-// Ruta raíz: verifica que el servidor funciona
-app.get('/', (req, res) => {
-  res.json({
-    mensaje: 'StudySync API funcionando',
-    version: '1.0.0',
-    endpoints: ['/api/sesiones', '/auth/register', '/auth/login', '/api/docs']
-  });
-});
+// ——— RUTAS 
 
 // NUEVA CONEXIÓN DE RUTAS (Según paso 4.3 de la guía)
 const sesionesRouter = require('./routes/sesiones');
@@ -36,7 +31,7 @@ app.use('/api/sesiones', sesionesRouter);
 // app.use('/auth', require('./routes/auth'));
 
 
-// ——— MANEJO DE ERRORES GLOBAL ——————————————————————————————————
+// ——— MANEJO DE ERRORES GLOBAL 
 
 app.use((err, req, res, next) => {
   console.error('[ERROR]', err.message);
